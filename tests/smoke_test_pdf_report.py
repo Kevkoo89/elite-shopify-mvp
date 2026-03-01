@@ -67,7 +67,7 @@ def main() -> None:
 
         generate_sentra_pdf(
             output_path=str(output_pdf),
-            store_name="Demo Shop",
+            store_name="test_shopify_admin",
             last_7_revenue=17480.25,
             previous_7_revenue=23610.10,
             change_percent=-25.96,
@@ -100,6 +100,11 @@ def main() -> None:
             "N",
             "Checks",
             "Shop",
+            "Erstellt von Sentra",
+            "Kevron Dynamics",
+            "Seite",
+            "Was bedeutet der Status",
+            "Hinweis zur Datenbasis",
         ):
             assert token in raw, f"DE-Token fehlt im PDF-Inhalt: {token}"
 
