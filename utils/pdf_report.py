@@ -13,6 +13,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas as pdfcanvas
 from reportlab.platypus import (
     Image,
+    KeepInFrame,
     KeepTogether,
     ListFlowable,
     ListItem,
@@ -442,20 +443,31 @@ def generate_sentra_pdf(
         rich_value: bool = False,
     ) -> Table:
         value_font = bold_font
+        value_paragraph = Paragraph(
+            value,
+            ParagraphStyle(
+                "kpi-v",
+                parent=kpi_value_style,
+                fontName=value_font,
+                textColor=value_color,
+            ),
+        )
+        value_block = (
+            KeepInFrame(
+                maxWidth=card_width - 16,
+                maxHeight=15 * mm,
+                content=[value_paragraph],
+                mode="shrink",
+                hAlign="CENTER",
+                vAlign="MIDDLE",
+            )
+            if rich_value
+            else value_paragraph
+        )
         card = Table(
             [
                 [Paragraph(title, kpi_label_style)],
-                [
-                    Paragraph(
-                        value,
-                        ParagraphStyle(
-                            "kpi-v",
-                            parent=kpi_value_style,
-                            fontName=value_font,
-                            textColor=value_color,
-                        ),
-                    )
-                ],
+                [value_block],
             ],
             colWidths=[card_width],
             rowHeights=[12 * mm, 15 * mm],
