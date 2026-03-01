@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from utils.pdf_report import format_currency_eur
 from utils.pdf_report import generate_sentra_pdf
 from utils.pdf_report import _currency  # noqa: PLC2701
 
@@ -81,9 +82,13 @@ def main() -> None:
         assert output_pdf.exists(), "PDF wurde nicht erzeugt."
         raw = output_pdf.read_text(encoding="latin-1", errors="ignore")
 
+        amount, currency = format_currency_eur(1195.0)
+        assert amount == "1.195,00", "Betragsformat ist nicht DE-konform."
+        assert currency == "EUR", "Währungscode unerwartet."
         assert _currency(1195.0) == "1.195,00\u00A0EUR", "Währungsformat ohne NBSP."
         assert " E) Tj T* (UR" not in raw, "EUR wurde über Zeilen getrennt."
         assert "(E) Tj T* (UR)" not in raw, "EUR wurde über Zeilen getrennt."
+        assert "1.195,00EUR" not in raw, "EUR klebt ohne Abstand an der Zahl."
 
         for token in (
             "Berichtsdatum",

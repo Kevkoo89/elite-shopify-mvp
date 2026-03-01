@@ -158,10 +158,15 @@ def _register_sentra_fonts() -> tuple[str, str]:
     return "Helvetica", "Helvetica-Bold"
 
 
-def _currency(value: float) -> str:
+def format_currency_eur(value: float) -> tuple[str, str]:
     formatted = f"{value:,.2f}"
     german = formatted.replace(",", "X").replace(".", ",").replace("X", ".")
-    return f"{german}\u00A0EUR"
+    return german, "EUR"
+
+
+def _currency(value: float) -> str:
+    amount_str, currency = format_currency_eur(value)
+    return f"{amount_str}\u00A0{currency}"
 
 
 def _change(value: float) -> str:
@@ -410,7 +415,7 @@ def generate_sentra_pdf(
                 ],
             ],
             colWidths=[card_width],
-            rowHeights=[12 * mm, 16 * mm],
+            rowHeights=[12 * mm, 15 * mm],
         )
         card.setStyle(
             TableStyle(
@@ -421,8 +426,8 @@ def generate_sentra_pdf(
                     ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
                     ("LEFTPADDING", (0, 0), (-1, -1), 8),
                     ("RIGHTPADDING", (0, 0), (-1, -1), 8),
-                    ("TOPPADDING", (0, 0), (-1, -1), 9),
-                    ("BOTTOMPADDING", (0, 0), (-1, -1), 9),
+                    ("TOPPADDING", (0, 0), (-1, -1), 8),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
                 ]
             )
         )
@@ -434,15 +439,15 @@ def generate_sentra_pdf(
     elif change_percent > 0:
         change_color = colors.HexColor("#388E3C")
 
-    last_7_num = _currency(last_7_revenue).replace("\u00A0EUR", "")
-    prev_7_num = _currency(previous_7_revenue).replace("\u00A0EUR", "")
+    last_7_amount, last_7_currency = format_currency_eur(last_7_revenue)
+    prev_7_amount, prev_7_currency = format_currency_eur(previous_7_revenue)
     last_7_rich = (
-        f"<nobr><font name='{bold_font}'>{last_7_num}</font>"
-        f"<font name='{regular_font}' size='12'>\u00A0EUR</font></nobr>"
+        f"<nobr><font name='{bold_font}'>{last_7_amount}</font>"
+        f"<font name='{regular_font}' size='11.3' color='#6B7280'>\u00A0{last_7_currency}</font></nobr>"
     )
     prev_7_rich = (
-        f"<nobr><font name='{bold_font}'>{prev_7_num}</font>"
-        f"<font name='{regular_font}' size='12'>\u00A0EUR</font></nobr>"
+        f"<nobr><font name='{bold_font}'>{prev_7_amount}</font>"
+        f"<font name='{regular_font}' size='11.3' color='#6B7280'>\u00A0{prev_7_currency}</font></nobr>"
     )
 
     metrics = Table(
