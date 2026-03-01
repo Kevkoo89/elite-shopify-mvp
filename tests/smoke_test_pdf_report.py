@@ -10,6 +10,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from utils.pdf_report import generate_sentra_pdf
+from utils.pdf_report import _currency  # noqa: PLC2701
 
 
 def _page_count(pdf_text: str) -> int:
@@ -48,8 +49,8 @@ def _extract_page_streams(pdf_text: str) -> list[str]:
 
 def main() -> None:
     recommendations = [
-        "Bezahlte Werbekanaele pruefen und schwache Kampagnen pausieren.",
-        "Conversion-Funnel pruefen (Landingpage, Checkout, Zahlungsfehler).",
+        "Bezahlte Werbekanäle prüfen und schwache Kampagnen pausieren.",
+        "Conversion-Funnel prüfen (Landingpage, Checkout, Zahlungsfehler).",
         "Preislogik, Rabattlogik und Warenbestand der Topseller validieren.",
     ]
 
@@ -58,8 +59,8 @@ def main() -> None:
         chart_png = Path(tmp) / "chart_missing.png"
         long_summary = " ".join(
             [
-                "Der Umsatzrueckgang ist deutlich sichtbar und wird im Wochenvergleich bestaetigt."
-                for _ in range(28)
+                "Der Umsatzrückgang ist deutlich sichtbar und wird im Wochenvergleich bestätigt."
+                for _ in range(8)
             ]
         )
 
@@ -73,10 +74,16 @@ def main() -> None:
             executive_summary=long_summary,
             recommendations=recommendations,
             chart_image_path=str(chart_png),
+            language="de",
+            warn_score=72.4,
         )
 
         assert output_pdf.exists(), "PDF wurde nicht erzeugt."
         raw = output_pdf.read_text(encoding="latin-1", errors="ignore")
+
+        assert _currency(1195.0) == "1.195,00\u00A0EUR", "Währungsformat ohne NBSP."
+        assert " E) Tj T* (UR" not in raw, "EUR wurde über Zeilen getrennt."
+        assert "(E) Tj T* (UR)" not in raw, "EUR wurde über Zeilen getrennt."
 
         for token in (
             "Berichtsdatum",
@@ -84,27 +91,28 @@ def main() -> None:
             "Kennzahlen",
             "Diagramm",
             "Interpretation & Empfehlungen",
+            "KPIs erkl",
+            "N",
+            "Checks",
             "Shop",
         ):
             assert token in raw, f"DE-Token fehlt im PDF-Inhalt: {token}"
 
         pages = _page_count(raw)
-        assert pages >= 1, "PDF enthaelt keine Seiten."
+        assert pages == 2, f"PDF sollte genau 2 Seiten enthalten, gefunden: {pages}"
 
         page_streams = _extract_page_streams(raw)
-        if pages == 2 and len(page_streams) >= 2:
-            page1 = page_streams[0]
-            page2 = page_streams[1]
-            section4_page1 = "Interpretation & Empfehlungen" in page1
-            section4_page2 = "Interpretation & Empfehlungen" in page2
-            bullet_hits_page2 = sum(
-                1 for item in recommendations if item.split(".")[0][:24] in page2
-            )
+        assert len(page_streams) >= 2, "PDF-Inhalt von Seite 2 konnte nicht gelesen werden."
 
-            assert section4_page2, "Section 4 soll bei Seitenumbruch sauber auf Seite 2 starten."
-            assert (not section4_page1) or bullet_hits_page2 >= 2, (
-                "Orphan erkannt: Seite 2 enthaelt nur einen Rest-Bullet von Section 4."
-            )
+        page2 = page_streams[1]
+        assert "Interpretation & Empfehlungen" in page2, "Section 4 fehlt auf Seite 2."
+        assert "KPIs erkl" in page2, "Section 5 fehlt auf Seite 2."
+        assert "Checks" in page2, "Section 6 fehlt auf Seite 2."
+        assert len(page2.strip()) > 500, "Seite 2 wirkt fast leer."
+
+        bullet_tokens = ("Bezahlte Werbe", "Conversion-Funnel", "Preislogik, Rabattlogik")
+        bullet_hits_page2 = sum(1 for token in bullet_tokens if token in page2)
+        assert bullet_hits_page2 >= 3, "Seite 2 enthält zu wenige Empfehlungspunkte."
 
     print("smoke_test_pdf_report: OK")
 
